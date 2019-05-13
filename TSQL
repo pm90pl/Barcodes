@@ -1,0 +1,25 @@
+CREATE FUNCTION EncodeToCode128b
+(@code NVARCHAR(MAX)
+)
+RETURNS NVARCHAR(MAX)
+     BEGIN
+         DECLARE @code128bStart NCHAR= N'Ì';
+         DECLARE @code128bStartValue INT= 104;
+         DECLARE @code128Stop NCHAR= CHAR(206);
+         DECLARE @code128Divider INT= 103;
+         DECLARE @code128bValues NVARCHAR(MAX)= N' !"#$%&''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~' COLLATE SQL_Latin1_General_CP1_CS_AS;
+         DECLARE @codeEncoded NVARCHAR(MAX);
+         DECLARE @charIndex INT= 0;
+         DECLARE @checkSymbolIndex INT= 0;
+         WHILE @charIndex < LEN(@code)
+             BEGIN
+                 SELECT @charIndex = @charIndex + 1;
+                 DECLARE @char NCHAR= SUBSTRING(@code, @charIndex, 1);
+                 DECLARE @charValue INT= CHARINDEX(@char COLLATE SQL_Latin1_General_CP1_CS_AS, @code128bValues, 0) - 1;
+                 SELECT @checkSymbolIndex = @checkSymbolIndex + (@charIndex * @charValue);
+             END;
+         SELECT @checkSymbolIndex = ((@checkSymbolIndex + @code128bStartValue) % @code128Divider) + 1;
+         DECLARE @checkChar NCHAR= SUBSTRING(@code128bValues, @checkSymbolIndex, 1);
+         SELECT @codeEncoded = @code128bStart + @code + @checkChar + @code128Stop;
+         RETURN @codeEncoded;
+     END;
